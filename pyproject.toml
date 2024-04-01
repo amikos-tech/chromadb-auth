@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "chromadb-multi-user-basic-auth"
+version = "0.1.0"
+description = ""
+authors = ["Trayan Azarov <trayan.azarov@amikos.tech>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+chromadb = {git = "https://github.com/chroma-core/chroma.git", branch = "main"}
+jupyter = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+testcontainers = "^3.7.1"
+pytest = "^8.0.1"
+typing-extensions = "^4.9.0"
+pytest-httpserver = "^1.0.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+required-version = "23.3.0" # Black will refuse to run if it's not this version.
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.mypy]
+ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = ["chromadb.proto.*"]
+ignore_errors = true
