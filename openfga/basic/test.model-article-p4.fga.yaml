@@ -1,0 +1,144 @@
+name: Chroma Authorization Model Tests # optional
+
+model_file: ./model-article-p4.fga # you can specify an external .fga file, or include it inline
+
+
+# tuple_file: ./tuples.yaml # you can specify an external file, or include it inline
+tuples:
+  - user: user:jane
+    relation: owner
+    object: team:chroma
+  - user: user:john
+    relation: writer
+    object: team:chroma
+  - user: user:jill
+    relation: reader
+    object: team:chroma
+  - user: user:sam
+    relation: can_create_tenant
+    object: server:server1
+  - user: user:sam
+    relation: can_get_tenant
+    object: server:server1
+  - user: user:sam
+    relation: can_get_preflight
+    object: server:server1
+  - user: user:michelle
+    relation: can_create_tenant
+    object: server:server1
+  - user: team:chroma#owner
+    relation: can_get_preflight
+    object: server:server1
+  - user: team:chroma#owner
+    relation: can_create_tenant
+    object: server:server1
+  - user: team:chroma#owner
+    relation: can_get_tenant
+    object: server:server1
+  - user: team:chroma#writer
+    relation: can_get_preflight
+    object: server:server1
+  - user: team:chroma#writer
+    relation: can_create_tenant
+    object: server:server1
+  - user: team:chroma#writer
+    relation: can_get_tenant
+    object: server:server1
+  - user: team:chroma#reader
+    relation: can_get_preflight
+    object: server:server1
+  - user: team:chroma#reader
+    relation: can_get_tenant
+    object: server:server1
+
+tests:
+  - name: Users should have team roles
+    check:
+      - user: user:jane
+        object: team:chroma
+        assertions:
+          owner: true
+          writer: false
+          reader: false
+      - user: user:john
+        object: team:chroma
+        assertions:
+          writer: true
+          owner: false
+          reader: false
+      - user: user:jill
+        object: team:chroma
+        assertions:
+          writer: false
+          owner: false
+          reader: true
+      - user: user:unknown
+        object: team:chroma
+        assertions:
+          writer: false
+          owner: false
+          reader: false
+      - user: user:jane
+        object: team:unknown
+        assertions:
+          writer: false
+          owner: false
+          reader: false
+      - user: user:unknown
+        object: team:unknown
+        assertions:
+          writer: false
+          owner: false
+          reader: false
+  - name: Users should have direct access to server
+    check:
+      - user: user:sam
+        object: server:server1
+        assertions:
+          can_get_preflight: true
+          can_create_tenant: true
+          can_get_tenant: true
+      - user: user:michelle
+        object: server:server1
+        assertions:
+          can_get_preflight: false
+          can_create_tenant: true
+          can_get_tenant: false
+      - user: user:unknown
+        object: server:server1
+        assertions:
+          can_get_preflight: false
+          can_create_tenant: false
+          can_get_tenant: false
+      - user: user:jill
+        object: server:serverX
+        assertions:
+          can_get_preflight: false
+          can_create_tenant: false
+          can_get_tenant: false
+  - name: Users of a team should have access to server
+    check:
+      - user: user:jane
+        object: server:server1
+        assertions:
+          can_create_tenant: true
+          can_get_tenant: true
+          can_get_preflight: true
+      - user: user:john
+        object: server:server1
+        assertions:
+          can_create_tenant: true
+          can_get_tenant: true
+          can_get_preflight: true
+      - user: user:jill
+        object: server:server1
+        assertions:
+          can_create_tenant: false
+          can_get_tenant: true
+          can_get_preflight: true
+      - user: user:unknown
+        object: server:server1
+        assertions:
+          can_create_tenant: false
+          can_get_tenant: false
+          can_get_preflight: false

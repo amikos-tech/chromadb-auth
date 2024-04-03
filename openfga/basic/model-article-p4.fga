@@ -1,0 +1,44 @@
+model
+  schema 1.1
+
+type user
+
+type team
+  relations
+    define owner: [user]
+    define writer: [user]
+    define reader: [user]
+
+type server
+  relations
+    define can_get_preflight: [user, team#owner, team#writer, team#reader]
+    define can_create_tenant: [user, team#owner, team#writer]
+    define can_get_tenant: [user, team#owner, team#writer, team#reader]
+
+type tenant
+  relations
+    define owned_by: [team]
+    define can_create_database: [user] or owner from owned_by or writer from owned_by
+    define can_get: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+
+type database
+  relations
+    define owned_by: [team]
+    define can_get: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+    define can_create_collection: [user] or owner from owned_by  or writer from owned_by
+    define can_delete_collection: [user] or owner from owned_by or writer from owned_by
+    define can_list_collections: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+    define can_get_collection: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+    define can_get_or_create_collection: [user] or owner from owned_by or writer from owned_by
+    define can_count_collections: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+
+type collection
+  relations
+    define owned_by: [team]
+    define can_add_records: [user] or owner from owned_by or writer from owned_by
+    define can_delete_records: [user] or owner from owned_by or writer from owned_by
+    define can_update_records: [user] or owner from owned_by or writer from owned_by
+    define can_get_records: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+    define can_upsert_records: [user] or owner from owned_by or writer from owned_by
+    define can_count_records: [user] or owner from owned_by or writer from owned_by or reader from owned_by
+    define can_query_records: [user] or owner from owned_by or writer from owned_by or reader from owned_by

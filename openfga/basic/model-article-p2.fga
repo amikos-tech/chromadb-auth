@@ -1,0 +1,49 @@
+model
+  schema 1.1
+
+type user
+
+type server
+  relations
+    define owner: [user]
+    define reader: [user]
+    define writer: [user]
+    define can_get_preflight: reader or owner or writer
+    define can_create_tenant: owner or writer
+
+type tenant
+  relations
+    define owner: [user]
+    define reader: [user]
+    define writer: [user]
+    define belongsTo: [server]
+    define can_create_database: owner from belongsTo or writer from belongsTo or owner or writer
+    define can_get: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
+
+type database
+  relations
+    define owner: [user]
+    define reader: [user]
+    define writer: [user]
+    define belongsTo: [tenant]
+    define can_get: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
+    define can_create_collection: owner from belongsTo or writer from belongsTo or owner or writer
+    define can_delete_collection: owner from belongsTo or writer from belongsTo or owner or writer
+    define can_list_collections: owner or writer or owner from belongsTo or writer from belongsTo
+    define can_get_collection: owner or writer or owner from belongsTo or writer from belongsTo
+    define can_get_or_create_collection: owner or writer or owner from belongsTo or writer from belongsTo
+    define can_count_collections: owner or writer or owner from belongsTo or writer from belongsTo
+
+type collection
+  relations
+    define owner: [user]
+    define reader: [user]
+    define writer: [user]
+    define belongsTo: [database]
+    define can_add_records: writer or reader or owner from belongsTo or writer from belongsTo
+    define can_delete_records: writer or owner from belongsTo or writer from belongsTo
+    define can_update_records: writer or owner from belongsTo or writer from belongsTo
+    define can_get_records: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
+    define can_upsert_records: writer or owner from belongsTo or writer from belongsTo
+    define can_count_records: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
+    define can_query_records: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo

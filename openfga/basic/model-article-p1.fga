@@ -1,0 +1,8 @@
+model
+  schema 1.1
+
+type server
+type user
+type tenant
+type database
+type collection
