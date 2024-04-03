@@ -18,7 +18,7 @@ type tenant
     define writer: [user]
     define belongsTo: [server]
     define can_create_database: owner from belongsTo or writer from belongsTo or owner or writer
-    define can_get: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
+    define can_get_database: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
 
 type database
   relations
@@ -26,7 +26,6 @@ type database
     define reader: [user]
     define writer: [user]
     define belongsTo: [tenant]
-    define can_get: reader or owner or writer or owner from belongsTo or reader from belongsTo or writer from belongsTo
     define can_create_collection: owner from belongsTo or writer from belongsTo or owner or writer
     define can_delete_collection: owner from belongsTo or writer from belongsTo or owner or writer
     define can_list_collections: owner or writer or owner from belongsTo or writer from belongsTo
