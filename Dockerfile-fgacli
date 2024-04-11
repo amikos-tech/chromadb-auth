@@ -1,0 +1,5 @@
+FROM golang:1.22-alpine
+RUN apk add --no-cache git jq
+RUN go install github.com/openfga/cli/cmd/fga@latest
+
+CMD ["fga"]

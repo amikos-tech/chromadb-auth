@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 chromadb = {git = "https://github.com/chroma-core/chroma.git", branch = "main"}
 jupyter = "^1.0.0"
+openfga-sdk = "^0.4.2"
 
 [tool.poetry.group.dev.dependencies]
 testcontainers = "^3.7.1"

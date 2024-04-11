@@ -6,12 +6,19 @@ networks:
 
 services:
   server:
+    depends_on:
+        openfga:
+            condition: service_healthy
+        import:
+          condition: service_completed_successfully
     image: chroma-server
     build:
       dockerfile: Dockerfile
     volumes:
       - ./chroma-data:/chroma/chroma
       - ./server.htpasswd:/chroma/server.htpasswd
+      - ./groupfile:/chroma/groupfile
+      - ./data/:/data
     command: "--workers 1 --host 0.0.0.0 --port 8000 --proxy-headers --log-config chromadb/log_config.yml --timeout-keep-alive 30"
     environment:
       - IS_PERSISTENT=TRUE
@@ -26,6 +33,10 @@ services:
       - CHROMA_OTEL_SERVICE_NAME=${CHROMA_OTEL_SERVICE_NAME}
       - CHROMA_OTEL_GRANULARITY=${CHROMA_OTEL_GRANULARITY}
       - CHROMA_SERVER_NOFILE=${CHROMA_SERVER_NOFILE}
+      - CHROMA_SERVER_AUTHZ_PROVIDER=${CHROMA_SERVER_AUTHZ_PROVIDER}
+      - CHROMA_SERVER_AUTHZ_CONFIG_PROVIDER=${CHROMA_SERVER_AUTHZ_CONFIG_PROVIDER}
+      - FGA_API_URL=http://openfga:8080
+      - FGA_CONFIG_FILE=/data/store.json # we expect that the import job will create this file
     restart: unless-stopped # possible values are: "no", always", "on-failure", "unless-stopped"
     ports:
       - "8000:8000"
@@ -37,3 +48,78 @@ services:
       retries: 3
     networks:
       - net
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    networks:
+      - net
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data_openfga:/var/lib/postgresql/data
+
+  migrate:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: openfga/openfga:latest
+    container_name: migrate
+    command: migrate
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=postgres
+      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable
+    networks:
+      - net
+  openfga:
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    image: openfga/openfga:latest
+    container_name: openfga
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=postgres
+      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable
+      - OPENFGA_LOG_FORMAT=json
+    command: run
+    networks:
+      - net
+    ports:
+      # Needed for the http server
+      - "8082:8080"
+      # Needed for the grpc server (if used)
+      - "8083:8081"
+      # Needed for the playground (Do not enable in prod!)
+      - "3003:3000"
+    healthcheck:
+      test: [ "CMD", "/usr/local/bin/grpc_health_probe", "-addr=openfga:8081" ]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+  import:
+    depends_on:
+      openfga:
+        condition: service_healthy
+    image: fga-cli
+    build:
+      context: .
+      dockerfile: Dockerfile-fgacli
+    container_name: import
+    volumes:
+      - ./data/:/data
+    command: |
+      /bin/sh -c "/data/create_store_and_import.sh"
+    environment:
+      - FGA_SERVER_URL=http://openfga:8080
+    networks:
+      - net
+volumes:
+  postgres_data_openfga:
+    driver: local

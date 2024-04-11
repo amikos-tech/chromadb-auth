@@ -1,5 +1,6 @@
 import importlib
 import logging
+from os import path
 from typing import Dict, cast, TypeVar, Optional
 
 from chromadb.auth import (
@@ -48,6 +49,24 @@ class MultiUserHtpasswdFileServerAuthCredentialsProvider(ServerAuthCredentialsPr
                         "Must be <username>:<bcrypt passwd>."
                     )
                 self._creds[_raw_creds[0]] = SecretStr(_raw_creds[1])
+        _basepath = path.dirname(_file)
+        self._user_group_map = dict()
+        if path.exists(path.join(_basepath, "groupfile")):
+            _groups = dict()
+            with open(path.join(_basepath, "groupfile"), "r") as f:
+                for line in f:
+                    _raw_group = [v for v in line.strip().split(":")]
+                    if len(_raw_group) < 2:
+                        raise ValueError(
+                            "Invalid Htpasswd group file found in "
+                            f"[{path.join(_basepath, 'groupfile')}]. "
+                            "Must be <groupname>:<username1>,<username2>,...,<usernameN>."
+                        )
+                    _groups[_raw_group[0]] = [u.strip() for u in _raw_group[1].split(",")]
+                    for _group, _users in _groups.items():
+                        for _user in _users:
+                            if _user not in self._user_group_map:
+                                self._user_group_map[_user] = _group
 
     @trace_method(  # type: ignore
         "MultiUserHtpasswdFileServerAuthCredentialsProvider.validate_credentials",
@@ -94,4 +113,11 @@ class MultiUserHtpasswdFileServerAuthCredentialsProvider(ServerAuthCredentialsPr
         self, credentials: AbstractCredentials[T]
     ) -> Optional[SimpleUserIdentity]:
         _creds = cast(Dict[str, SecretStr], credentials.get_credentials())
-        return SimpleUserIdentity(_creds["username"].get_secret_value())
+        if _creds["username"].get_secret_value() in self._user_group_map.keys():
+            return SimpleUserIdentity(
+                _creds["username"].get_secret_value(),
+                attributes={
+                    "team": self._user_group_map[_creds["username"].get_secret_value()]
+                },
+            )
+        return SimpleUserIdentity(_creds["username"].get_secret_value(),attributes={"team":"public"})
