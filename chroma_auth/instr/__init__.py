@@ -590,7 +590,6 @@ class FastAPI(chromadb.server.Server):
         ),
     )
     def delete(self, collection_id: str, delete: DeleteEmbedding) -> List[UUID]:
-        collection = self._api.get_collection(collection_id)
         return self._api._delete(
             where=delete.where,  # type: ignore
             ids=delete.ids,
